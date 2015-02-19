@@ -54,18 +54,24 @@ RayHitResult Sphere::IntersectByRay(Ray& ray)
 	// 2. One real root, the ray tangentially intersects the sphere
 	// 3. No real root, no intersection
 
-	float a = -ray.GetRay().DotProduct(ray.GetRayStart() - m_centre);
-	float b = ray.GetRay().DotProduct(ray.GetRayStart() - m_centre);
-	float c = ray.GetRay().DotProduct(ray.GetRay()) * ((ray.GetRayStart() - m_centre).DotProduct(ray.GetRayStart() - m_centre) - (m_radius * m_radius));
+	//float a = -ray.GetRay().DotProduct(ray.GetRayStart() - m_centre);
+	//float b = ray.GetRay().DotProduct(ray.GetRayStart() - m_centre);
+	//float c = ray.GetRay().DotProduct(ray.GetRay()) * ((ray.GetRayStart() - m_centre).DotProduct(ray.GetRayStart() - m_centre) - (m_radius * m_radius));
 
-	t = (a * sqrt((b * b) - c) / ray.GetRay().DotProduct(ray.GetRay()));
+	//t = (a * sqrt((b * b) - c) / ray.GetRay().DotProduct(ray.GetRay()));
+
+	Vector3 v = ray.GetRayStart() - m_centre;
+
+	float b = -v.DotProduct(ray.GetRay());
+
+	t = (b * b) - v.DotProduct(v) + (m_radius * m_radius);
 
 	if (t > 0)
 	{
 		// Find smallest root (First intersection).
 		float t_sqrt = sqrtf(t);
-		float t0 = (-b + t_sqrt);
-		float t1 = (-b - t_sqrt);
+		float t0 = (b + t_sqrt);
+		float t1 = (b - t_sqrt);
 
 		// Sets t equal to the first intersection of the sphere (smallest root)
 		t = t0 <= t1 ? t0 : t1;		
@@ -82,6 +88,7 @@ RayHitResult Sphere::IntersectByRay(Ray& ray)
 	normal = (intersection_point - m_centre);
 
 	normal.Normalise();
+
 
 	if (t>0.0 && t < FARFAR_AWAY)
 	{
