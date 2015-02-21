@@ -104,13 +104,12 @@ Vector3 Vector3::CrossProduct(const Vector3& rhs) const
 Vector3 Vector3::Reflect(const Vector3& n) const
 {
 	Vector3 result;
+	Vector3 self = *(this);
 	
 	//TODO: Calculate the reflection of this vector given the input normal n
 	//Store the result in result
 
-	result[0] = -2 * (DotProduct(n)) * n[0] + m_element[0];
-	result[1] = -2 * (DotProduct(n)) * n[1] + m_element[1];
-	result[2] = -2 * (DotProduct(n)) * n[2] + m_element[2];
+	result = n * 2 * DotProduct(n) - self;
 	
 	return result;
 }
@@ -118,11 +117,15 @@ Vector3 Vector3::Reflect(const Vector3& n) const
 Vector3 Vector3::Refract(const Vector3& n, double r_coeff) const
 {
 	Vector3 result;
+	Vector3 self = *(this);
 	
 	//TODO: Calculate the refraction of this vector given the input normal n and the refractive coefficient r_index
 	//Store the result in result
 	//Refraction is governed by the Snell's law
-	
+
+	float c = -self.DotProduct(n);
+	result = self * r_coeff + (n * (r_coeff * c - sqrt(1.0f - r_coeff * r_coeff * (1.0f - c * c))));
+
 	return result;
 }
 

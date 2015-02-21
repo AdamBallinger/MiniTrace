@@ -158,6 +158,7 @@ Colour RayTracer::TraceScene(Scene* pScene, Ray& ray, Colour incolour, int trace
 				//TODO: Calculate reflection ray based on the current intersection result
 				//Recursively call TraceScene with the reflection ray
 				//Combine the returned colour with the current surface colour 
+
 			}
 		}
 
@@ -181,6 +182,11 @@ Colour RayTracer::TraceScene(Scene* pScene, Ray& ray, Colour incolour, int trace
 			{
 				//TODO: Calculate the shadow ray using the current intersection result and the light position
 				//Recursively call TraceScene with the shadow ray
+
+				Ray sRay = Ray();
+				sRay.SetRay(result.point, result.point + (*lit_iter)->GetLightPosition());
+
+				TraceScene(pScene, sRay, incolour, tracelevel--, true);
 
 				lit_iter++;
 			}
@@ -206,9 +212,9 @@ Colour RayTracer::CalculateLighting(std::vector<Light*>* lights, Vector3* campos
 	//Do not modify it
 	if (((Primitive*)hitresult->data)->m_primtype == Primitive::PRIMTYPE_Plane)
 	{
-		int dx = (hitresult->point[0]/2.0);
-		int dy = (hitresult->point[1]/2.0);
-		int dz = (hitresult->point[2]/2.0);
+		int dx = (int)(hitresult->point[0]/2.0);
+		int dy = (int)(hitresult->point[1]/2.0);
+		int dz = (int)(hitresult->point[2]/2.0);
 
 		if (dx % 2 || dy % 2 || dz % 2)
 		{
@@ -243,28 +249,41 @@ Colour RayTracer::CalculateLighting(std::vector<Light*>* lights, Vector3* campos
 			Vector3 light_dir = (light_pos - surface_point);
 			light_dir.Normalise();
 
+			// Calculate the diffuse term.
+			float diffuse = fmaxf((float)light_dir.DotProduct(normal), 0.0f);
+
+			float diffuse_red = mat->GetDiffuseColour().red * diffuse;
+			float diffuse_green = mat->GetDiffuseColour().green * diffuse;
+			float diffuse_blue = mat->GetDiffuseColour().blue * diffuse;
+
+			Vector3 view = (*campos - surface_point);
+			view.Normalise();
+
+			// (Phong model)
 			Vector3 reflection = (light_dir.Reflect(normal));
 			reflection.Normalise();
 
-			Vector3 view_vector = (*campos - surface_point);
-			view_vector.Normalise();
+			// Blinn-Phong model)
+			Vector3 half = (light_dir + view);
+			half.Normalise();
 
-			float diffuse = abs(normal.DotProduct(light_dir));
+			// Calculate the specular term. (Phong model)
+			//float specular = view.DotProduct(reflection);
 
-			float specular = abs(view_vector.DotProduct(reflection));
-			float specular_brightness = pow(specular, mat->GetSpecPower());
+			// Calculate the specular term. (Blinn-Phong model)
+			float specular = (float)normal.DotProduct(half);
 
-			float diffuse_red = (*lit_iter)->GetLightColour().red * diffuse * mat->GetDiffuseColour().red;
-			float diffuse_green = (*lit_iter)->GetLightColour().green * diffuse * mat->GetDiffuseColour().green;
-			float diffuse_blue = (*lit_iter)->GetLightColour().blue * diffuse * mat->GetDiffuseColour().blue;
+			if (specular > 1) specular = 1;
+			if (specular < 0) specular = 0;
 
-			float specular_red = (*lit_iter)->GetLightColour().red * (specular_brightness * mat->GetSpecularColour().red);
-			float specular_green = (*lit_iter)->GetLightColour().green * (specular_brightness * mat->GetSpecularColour().green);
-			float specular_blue = (*lit_iter)->GetLightColour().blue * (specular_brightness * mat->GetSpecularColour().blue);
+			float spec_red = powf(specular, (float)mat->GetSpecPower()) * mat->GetSpecularColour().red;
+			float spec_green = powf(specular, (float)mat->GetSpecPower()) * mat->GetSpecularColour().green;
+			float spec_blue = powf(specular, (float)mat->GetSpecPower()) * mat->GetSpecularColour().blue;
 
-			outcolour.red += diffuse_red + specular_red;
-			outcolour.green += diffuse_green + specular_green;
-			outcolour.blue += diffuse_blue + specular_blue;
+			// ambient + diffuse + specular
+			outcolour.red += diffuse_red + spec_red;
+			outcolour.green += diffuse_green + spec_green;
+			outcolour.blue += diffuse_blue + spec_blue;
 
 			lit_iter++;
 		}

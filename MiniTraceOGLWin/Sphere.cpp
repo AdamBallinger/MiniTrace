@@ -60,11 +60,11 @@ RayHitResult Sphere::IntersectByRay(Ray& ray)
 
 	//t = (a * sqrt((b * b) - c) / ray.GetRay().DotProduct(ray.GetRay()));
 
-	Vector3 v = ray.GetRayStart() - m_centre;
+	Vector3 ray_distance = ray.GetRayStart() - m_centre;
 
-	float b = -v.DotProduct(ray.GetRay());
+	float b = -ray_distance.DotProduct(ray.GetRay());
 
-	t = (b * b) - v.DotProduct(v) + (m_radius * m_radius);
+	t = (b * b) - ray_distance.DotProduct(ray_distance) + (m_radius * m_radius);
 
 	if (t > 0)
 	{
@@ -76,7 +76,6 @@ RayHitResult Sphere::IntersectByRay(Ray& ray)
 		// Sets t equal to the first intersection of the sphere (smallest root)
 		t = t0 <= t1 ? t0 : t1;		
 	}
-	
 
 	//Calculate the exact location of the intersection using the result of t
 	intersection_point = ray.GetRayStart() + ray.GetRay() * t;
