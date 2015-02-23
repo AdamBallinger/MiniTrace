@@ -60,7 +60,10 @@ RayHitResult Triangle::IntersectByRay(Ray& ray)
 
 	double d = -(m_vertices[0].DotProduct(m_normal));
 
-	t = -(m_normal.DotProduct(ray.GetRayStart()) + d) / (m_normal.DotProduct(ray.GetRay()));
+	t = -(ray.GetRayStart().DotProduct(m_normal) + d) / ray.GetRay().DotProduct(m_normal);
+
+	if (t <= 0.0f)
+		return result;
 
 	//Calculate the exact location of the intersection using the result of t
 	intersection_point = ray.GetRayStart() + ray.GetRay() * t;
@@ -92,10 +95,6 @@ RayHitResult Triangle::IntersectByRay(Ray& ray)
 			return result;
 		}
 	}
-
-	
-
-	
 
 	return result;
 }
