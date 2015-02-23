@@ -85,45 +85,45 @@ void RayTracer::DoRayTrace( Scene* pScene )
 		glClearColor(0.0, 0.0, 0.0, 0.0);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		for (int i = 0; i < m_buffHeight; i++) {
-			for (int j = 0; j < m_buffWidth; j++) {
+for (int i = 0; i < m_buffHeight; i++) {
+	for (int j = 0; j < m_buffWidth; j++) {
 
-				//calculate the metric size of a pixel in the view plane (e.g. framebuffer)
-				Vector3 pixel;
+		//calculate the metric size of a pixel in the view plane (e.g. framebuffer)
+		Vector3 pixel;
 
-				pixel[0] = start[0] + (i + 0.5) * camUpVector[0] * pixelDY
-					+ (j + 0.5) * camRightVector[0] * pixelDX;
-				pixel[1] = start[1] + (i + 0.5) * camUpVector[1] * pixelDY
-					+ (j + 0.5) * camRightVector[1] * pixelDX;
-				pixel[2] = start[2] + (i + 0.5) * camUpVector[2] * pixelDY
-					+ (j + 0.5) * camRightVector[2] * pixelDX;
+		pixel[0] = start[0] + (i + 0.5) * camUpVector[0] * pixelDY
+			+ (j - 0.5) * camRightVector[0] * pixelDX;
+		pixel[1] = start[1] + (i + 0.5) * camUpVector[1] * pixelDY
+			+ (j + 0.5) * camRightVector[1] * pixelDX;
+		pixel[2] = start[2] + (i + 0.5) * camUpVector[2] * pixelDY
+			+ (j + 0.5) * camRightVector[2] * pixelDX;
 
-				/*
-				* setup view ray
-				* In perspective projection, each view ray originates from the eye (camera) position 
-				* and pierces through a pixel in the view plane
-				*
-				* TODO: For a little extra credit, set up the view rays to produce orthographic projection
-				*/
-				Ray viewray;
-				viewray.SetRay(camPosition,	(pixel - camPosition).Normalise());
-				
-				//trace the scene using the view ray
-				//the default colour is the background colour, unless something is hit along the way
-				Colour colour = this->TraceScene(pScene, viewray, scenebg, m_traceLevel);
+		/*
+		* setup view ray
+		* In perspective projection, each view ray originates from the eye (camera) position
+		* and pierces through a pixel in the view plane
+		*
+		* TODO: For a little extra credit, set up the view rays to produce orthographic projection
+		*/
+		Ray viewray;
+		viewray.SetRay(camPosition, (pixel - camPosition).Normalise());
 
-				/*
-				* The only OpenGL code we need
-				* Draw the pixel as a coloured rectangle
-				*/
-				glColor3f(colour.red, colour.green, colour.blue);
-				glRecti(j, i, j + 1, i + 1);
-			}
-			glFlush();
-		}
+		//trace the scene using the view ray
+		//the default colour is the background colour, unless something is hit along the way
+		Colour colour = this->TraceScene(pScene, viewray, scenebg, m_traceLevel);
 
-		fprintf(stdout, "Done!!!\n");
-		m_renderCount++;
+		/*
+		* The only OpenGL code we need
+		* Draw the pixel as a coloured rectangle
+		*/
+		glColor3f(colour.red, colour.green, colour.blue);
+		glRecti(j, i, j + 1, i + 1);
+	}
+	glFlush();
+}
+
+fprintf(stdout, "Done!!!\n");
+m_renderCount++;
 	}
 	glFlush();
 }
@@ -148,8 +148,8 @@ Colour RayTracer::TraceScene(Scene* pScene, Ray& ray, Colour incolour, int trace
 		outcolour = CalculateLighting(light_list,
 			&start,
 			&result);
-		
-		if(m_traceflag & TRACE_REFLECTION)
+
+		if (m_traceflag & TRACE_REFLECTION)
 		{
 			//Only consider reflection for spheres and boxes
 			if (((Primitive*)result.data)->m_primtype == Primitive::PRIMTYPE_Sphere ||
@@ -159,6 +159,16 @@ Colour RayTracer::TraceScene(Scene* pScene, Ray& ray, Colour incolour, int trace
 				//Recursively call TraceScene with the reflection ray
 				//Combine the returned colour with the current surface colour 
 
+				Vector3 reflection = (start - result.point).Reflect(result.normal).Normalise();
+
+				Ray reflectedRay = Ray();
+				reflectedRay.SetRay(result.point, reflection);
+
+				Colour c = TraceScene(pScene, reflectedRay, incolour, tracelevel -= 1, false);
+
+				outcolour.red *= c.red;
+				outcolour.green *= c.green;
+				outcolour.blue *= c.blue;
 			}
 		}
 
@@ -171,6 +181,18 @@ Colour RayTracer::TraceScene(Scene* pScene, Ray& ray, Colour incolour, int trace
 				//TODO: Calculate refraction ray based on the current intersection result
 				//Recursively call TraceScene with the reflection ray
 				//Combine the returned colour with the current surface colour
+
+				//Vector3 refraction = (result.point).Refract(result.normal, 1.52);
+
+				//Ray refractionRay = Ray();
+				//refractionRay.SetRay(result.point, refraction);
+
+				//Colour c = TraceScene(pScene, refractionRay, incolour, tracelevel -= 1, false);
+
+				//outcolour.red *= c.red;
+				//outcolour.green *= c.green;
+				//outcolour.blue *= c.blue;
+
 			}
 		}
 		
@@ -183,16 +205,21 @@ Colour RayTracer::TraceScene(Scene* pScene, Ray& ray, Colour incolour, int trace
 				//TODO: Calculate the shadow ray using the current intersection result and the light position
 				//Recursively call TraceScene with the shadow ray
 
-				Ray sRay = Ray();
-				sRay.SetRay(result.point, result.point + (*lit_iter)->GetLightPosition());
+				Vector3 light_pos = (*lit_iter)->GetLightPosition();
+				Vector3 dirToLight = (light_pos - result.point);
 
-				TraceScene(pScene, sRay, incolour, tracelevel--, true);
+				Ray shadowRay = Ray();
+				shadowRay.SetRay(result.point * 0.00001f, dirToLight);
+
+				TraceScene(pScene, shadowRay, incolour, tracelevel -= 1, true);
+
+
 
 				lit_iter++;
 			}
 		}
 	}
-		
+
 	return outcolour;
 }
 
@@ -207,14 +234,14 @@ Colour RayTracer::CalculateLighting(std::vector<Light*>* lights, Vector3* campos
 
 	//the default output colour is the ambient colour
 	outcolour = mat->GetAmbientColour();
-	
+
 	//This is a hack to set a checker pattern on the planes
 	//Do not modify it
 	if (((Primitive*)hitresult->data)->m_primtype == Primitive::PRIMTYPE_Plane)
 	{
-		int dx = (int)(hitresult->point[0]/2.0);
-		int dy = (int)(hitresult->point[1]/2.0);
-		int dz = (int)(hitresult->point[2]/2.0);
+		int dx = (int)(hitresult->point[0] / 2.0);
+		int dy = (int)(hitresult->point[1] / 2.0);
+		int dz = (int)(hitresult->point[2] / 2.0);
 
 		if (dx % 2 || dy % 2 || dz % 2)
 		{
@@ -250,7 +277,7 @@ Colour RayTracer::CalculateLighting(std::vector<Light*>* lights, Vector3* campos
 			light_dir.Normalise();
 
 			// Calculate the diffuse term.
-			float diffuse = fmaxf((float)light_dir.DotProduct(normal), 0.0f);
+			float diffuse = max(normal.DotProduct(light_dir), 0);
 
 			float diffuse_red = mat->GetDiffuseColour().red * diffuse;
 			float diffuse_green = mat->GetDiffuseColour().green * diffuse;
@@ -271,14 +298,14 @@ Colour RayTracer::CalculateLighting(std::vector<Light*>* lights, Vector3* campos
 			//float specular = view.DotProduct(reflection);
 
 			// Calculate the specular term. (Blinn-Phong model)
-			float specular = (float)normal.DotProduct(half);
+			float specular = normal.DotProduct(half);
 
 			if (specular > 1) specular = 1;
 			if (specular < 0) specular = 0;
 
-			float spec_red = powf(specular, (float)mat->GetSpecPower()) * mat->GetSpecularColour().red;
-			float spec_green = powf(specular, (float)mat->GetSpecPower()) * mat->GetSpecularColour().green;
-			float spec_blue = powf(specular, (float)mat->GetSpecPower()) * mat->GetSpecularColour().blue;
+			float spec_red = powf(specular, mat->GetSpecPower()) * mat->GetSpecularColour().red;
+			float spec_green = powf(specular, mat->GetSpecPower()) * mat->GetSpecularColour().green;
+			float spec_blue = powf(specular, mat->GetSpecPower()) * mat->GetSpecularColour().blue;
 
 			// ambient + diffuse + specular
 			outcolour.red += diffuse_red + spec_red;
