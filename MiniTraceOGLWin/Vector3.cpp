@@ -123,21 +123,16 @@ Vector3 Vector3::Refract(const Vector3& n, double r_coeff) const
 	//Store the result in result
 	//Refraction is governed by the Snell's law
 
-	float r = 1.0f / r_coeff;
+	float cosI = n.DotProduct(self);
+	float cosT2 = r_coeff * r_coeff * (1.0f - pow(cosI, 2));
 
-	float cosI = -1.0f * n.DotProduct(self);
-	float cosT2 = 1.0f - r * r * (1.0f - cosI - cosI);
-
-	if (cosT2 < 0)
+	if (cosT2 <= 1)
 	{
-		result.SetZero();
+		result = (self * r_coeff) - (n * (r_coeff * cosI + sqrtf(1.0f - cosT2)));
+		result.Normalise();
+
 		return result;
 	}
-
-	result = (self * r) = (n * (r * cosI - sqrtf(cosT2)));
-	result.Normalise();
-
-	return result;
 }
 
 void Vector3::SetZero()

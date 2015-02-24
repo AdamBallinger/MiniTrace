@@ -144,11 +144,22 @@ Colour RayTracer::TraceScene(Scene* pScene, Ray& ray, Colour incolour, int trace
 
 	if (result.data) //the ray has hit something
 	{
+		Vector3 start = ray.GetRayStart(); 
+		if (!shadowray)
+		{
+			outcolour = CalculateLighting(light_list,
+				&start,
+				&result);
+		}
+		else
+		{
+			outcolour.red /= 2;
+			outcolour.green /= 2;
+			outcolour.blue /= 2;
+			return outcolour;
+		}
 
-		Vector3 start = ray.GetRayStart();
-		outcolour = CalculateLighting(light_list,
-			&start,
-			&result);
+		
 
 		if (m_traceflag & TRACE_REFLECTION)
 		{
@@ -183,6 +194,17 @@ Colour RayTracer::TraceScene(Scene* pScene, Ray& ray, Colour incolour, int trace
 				//Recursively call TraceScene with the reflection ray
 				//Combine the returned colour with the current surface colour
 
+				Vector3 refraction = (ray.GetRay()).Refract(result.normal, 1.0 / 1.08);
+
+				Ray reflectedRay = Ray();
+				reflectedRay.SetRay(result.point + refraction * 0.001, refraction);
+
+				Colour c = TraceScene(pScene, reflectedRay, outcolour, tracelevel -= 1, false);
+
+				outcolour.red *= c.red;
+				outcolour.green *= c.green;
+				outcolour.blue *= c.blue;
+
 			}
 		}
 		
@@ -200,26 +222,30 @@ Colour RayTracer::TraceScene(Scene* pScene, Ray& ray, Colour incolour, int trace
 				
 				Ray shadowRay = Ray();
 
-				// Correct the intersection results positioning to prevent self shadowing, causing artifacts.
-				for (int i = 0; i < 3; ++i)
+				//// Correct the intersection results positioning to prevent self shadowing, causing artifacts.
+				/*for (int i = 0; i < 3; ++i)
 				{
 					result.point[i] += 0.1f;
-				}
+				}*/
 
-				// Set the ray origin at the current intersection point, and set its direction towards the light source.
-				shadowRay.SetRay(result.point, dirToLight);
+				//// Set the ray origin at the current intersection point, and set its direction towards the light source.
+				//shadowRay.SetRay(result.point, dirToLight);
 
-				// Cast the shadow ray.
-				RayHitResult shadowResult = pScene->IntersectByRay(shadowRay, true);
+				//// Cast the shadow ray.
+				//RayHitResult shadowResult = pScene->IntersectByRay(shadowRay, true);
 
-				// if the value of t is less than the t value of the primary ray, the shadow ray was blocked by something.
-				if (result.t > shadowResult.t)
-				{
-					// In shadow
-					outcolour.red *= 0.3;
-					outcolour.green *= 0.3;
-					outcolour.blue *= 0.3;
-				}
+				//// if the value of t is less than the t value of the primary ray, the shadow ray was blocked by something.
+				//if (result.t > shadowResult.t)
+				//{
+				//	// In shadow
+				//	outcolour.red *= 0.3;
+				//	outcolour.green *= 0.3;
+				//	outcolour.blue *= 0.3;
+				//}
+
+				shadowRay.SetRay(result.point + dirToLight * 0.001, dirToLight);
+
+				outcolour = TraceScene(pScene, shadowRay, outcolour, tracelevel -= 1, true);
 
 				lit_iter++;
 			}

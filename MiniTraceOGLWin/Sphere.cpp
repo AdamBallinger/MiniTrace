@@ -86,15 +86,13 @@ RayHitResult Sphere::IntersectByRay(Ray& ray)
 
 	normal = (intersection_point - m_centre);
 
-	normal.Normalise();
-
 
 	if (t>0.0 && t < FARFAR_AWAY)
 	{
 		result.t = t;
 		result.data = this;
 		result.point = intersection_point;
-		result.normal = normal;
+		result.normal = normal.Normalise();
 	}
 
 	return result;

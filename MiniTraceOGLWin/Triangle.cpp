@@ -57,44 +57,47 @@ RayHitResult Triangle::IntersectByRay(Ray& ray)
 	//
 	// Similar to the plane case, you should check if the ray is parallel to the triangle
 	// and check if the ray intersects the triangle from the front or the back
-
-	double d = -(m_vertices[0].DotProduct(m_normal));
-
-	t = -(ray.GetRayStart().DotProduct(m_normal) + d) / ray.GetRay().DotProduct(m_normal);
-
-	if (t <= 0.0f)
-		return result;
-
-	//Calculate the exact location of the intersection using the result of t
-	intersection_point = ray.GetRayStart() + ray.GetRay() * t;
-
-	// Calculate the barycentric coordinates of the intersection point
-	Vector3 a = m_vertices[1] - m_vertices[0];
-	Vector3 b = m_vertices[2] - m_vertices[0];
-	Vector3 c = intersection_point - m_vertices[0];
-
-	float aa = a.DotProduct(a);
-	float ab = a.DotProduct(b);
-	float bb = b.DotProduct(b);
-	float ca = c.DotProduct(a);
-	float cb = c.DotProduct(b);
-
-	float denom = aa * bb - ab * ab;
-
-	float v = (bb * ca - ab * cb) / denom;
-	float w = (aa * cb - ab * ca) / denom;
-	float u = 1.0f - v - w;
-
-	if (v >= 0 && w >= 0 && u >= 0)
+	if (ray.GetRay().DotProduct(m_normal) < 0)
 	{
-		if (t > 0 && t < FARFAR_AWAY) { //ray intersection
-			result.t = t;
-			result.normal = this->m_normal;
-			result.point = intersection_point;
-			result.data = this;
+		double d = -(m_vertices[0].DotProduct(m_normal));
+
+		t = -(ray.GetRayStart().DotProduct(m_normal) + d) / ray.GetRay().DotProduct(m_normal);
+
+		if (t <= 0.0f)
 			return result;
+
+		//Calculate the exact location of the intersection using the result of t
+		intersection_point = ray.GetRayStart() + ray.GetRay() * t;
+
+		// Calculate the barycentric coordinates of the intersection point
+		Vector3 a = m_vertices[1] - m_vertices[0];
+		Vector3 b = m_vertices[2] - m_vertices[0];
+		Vector3 c = intersection_point - m_vertices[0];
+
+		float aa = a.DotProduct(a);
+		float ab = a.DotProduct(b);
+		float bb = b.DotProduct(b);
+		float ca = c.DotProduct(a);
+		float cb = c.DotProduct(b);
+
+		float denom = aa * bb - ab * ab;
+
+		float v = (bb * ca - ab * cb) / denom;
+		float w = (aa * cb - ab * ca) / denom;
+		float u = 1.0f - v - w;
+
+		if (v >= 0 && w >= 0 && u >= 0)
+		{
+			if (t > 0 && t < FARFAR_AWAY) { //ray intersection
+				result.t = t;
+				result.normal = this->m_normal;
+				result.point = intersection_point;
+				result.data = this;
+				return result;
+			}
 		}
 	}
+		
 
 	return result;
 }
