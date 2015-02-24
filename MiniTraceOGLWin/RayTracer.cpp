@@ -189,7 +189,7 @@ Colour RayTracer::TraceScene(Scene* pScene, Ray& ray, Colour incolour, int trace
 			//Only consider refraction for spheres and boxes
 			if (((Primitive*)result.data)->m_primtype == Primitive::PRIMTYPE_Sphere ||
 				((Primitive*)result.data)->m_primtype == Primitive::PRIMTYPE_Box)
-			{
+			{ 
 				//TODO: Calculate refraction ray based on the current intersection result
 				//Recursively call TraceScene with the reflection ray
 				//Combine the returned colour with the current surface colour
@@ -203,7 +203,7 @@ Colour RayTracer::TraceScene(Scene* pScene, Ray& ray, Colour incolour, int trace
 
 				outcolour.red *= c.red;
 				outcolour.green *= c.green;
-				outcolour.blue *= c.blue;
+				outcolour.blue *= c.blue; 
 
 			}
 		}
@@ -309,7 +309,7 @@ Colour RayTracer::CalculateLighting(std::vector<Light*>* lights, Vector3* campos
 			light_dir.Normalise();
 
 			// Calculate the diffuse term.
-			float diffuse = max(normal.DotProduct(light_dir), 0);
+			float diffuse = fmaxf((float)normal.DotProduct(light_dir), 0.0f);
 
 			float diffuse_red = mat->GetDiffuseColour().red * diffuse;
 			float diffuse_green = mat->GetDiffuseColour().green * diffuse;
@@ -330,14 +330,14 @@ Colour RayTracer::CalculateLighting(std::vector<Light*>* lights, Vector3* campos
 			//float specular = view.DotProduct(reflection);
 
 			// Calculate the specular term. (Blinn-Phong model)
-			float specular = normal.DotProduct(half);
+			float specular = (float)normal.DotProduct(half);
 
 			if (specular > 1) specular = 1;
 			if (specular < 0) specular = 0;
 
-			float spec_red = powf(specular, mat->GetSpecPower()) * mat->GetSpecularColour().red;
-			float spec_green = powf(specular, mat->GetSpecPower()) * mat->GetSpecularColour().green;
-			float spec_blue = powf(specular, mat->GetSpecPower()) * mat->GetSpecularColour().blue;
+			float spec_red = powf(specular, (float)mat->GetSpecPower()) * mat->GetSpecularColour().red;
+			float spec_green = powf(specular, (float)mat->GetSpecPower()) * mat->GetSpecularColour().green;
+			float spec_blue = powf(specular, (float)mat->GetSpecPower()) * mat->GetSpecularColour().blue;
 
 			// ambient + diffuse + specular
 			outcolour.red += diffuse_red + spec_red;

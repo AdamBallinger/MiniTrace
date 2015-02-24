@@ -63,7 +63,7 @@ Vector3 Vector3::operator * (double scale) const
 
 double Vector3::Norm() const
 {
-	return sqrtf(m_element[0] * m_element[0] + m_element[1] * m_element[1] + m_element[2] * m_element[2]);
+	return sqrtf((float)m_element[0] * (float)m_element[0] + (float)m_element[1] * (float)m_element[1] + (float)m_element[2] * (float)m_element[2]);
 }
 
 double Vector3::Norm_Sqr() const
@@ -123,16 +123,18 @@ Vector3 Vector3::Refract(const Vector3& n, double r_coeff) const
 	//Store the result in result
 	//Refraction is governed by the Snell's law
 
-	float cosI = n.DotProduct(self);
-	float cosT2 = r_coeff * r_coeff * (1.0f - pow(cosI, 2));
+	float cosI = (float)n.DotProduct(self);
+	float cosT2 = (float)r_coeff * (float)r_coeff * (1.0f - powf(cosI, 2.0));
 
 	if (cosT2 <= 1)
 	{
-		result = (self * r_coeff) - (n * (r_coeff * cosI + sqrtf(1.0f - cosT2)));
+		result = (self * (float)r_coeff) - (n * ((float)r_coeff * cosI + sqrtf(1.0f - cosT2)));
 		result.Normalise();
 
-		return result;
+		return result; 
 	}
+	result.SetZero();
+	return result;
 }
 
 void Vector3::SetZero()
