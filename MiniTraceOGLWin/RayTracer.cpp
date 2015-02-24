@@ -85,45 +85,46 @@ void RayTracer::DoRayTrace( Scene* pScene )
 		glClearColor(0.0, 0.0, 0.0, 0.0);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-for (int i = 0; i < m_buffHeight; i++) {
-	for (int j = 0; j < m_buffWidth; j++) {
+	for (int i = 0; i < m_buffHeight; i++) {
+		for (int j = 0; j < m_buffWidth; j++) {
 
-		//calculate the metric size of a pixel in the view plane (e.g. framebuffer)
-		Vector3 pixel;
+			//calculate the metric size of a pixel in the view plane (e.g. framebuffer)
+			Vector3 pixel;
 
-		pixel[0] = start[0] + (i + 0.5) * camUpVector[0] * pixelDY
-			+ (j - 0.5) * camRightVector[0] * pixelDX;
-		pixel[1] = start[1] + (i + 0.5) * camUpVector[1] * pixelDY
-			+ (j + 0.5) * camRightVector[1] * pixelDX;
-		pixel[2] = start[2] + (i + 0.5) * camUpVector[2] * pixelDY
-			+ (j + 0.5) * camRightVector[2] * pixelDX;
+			pixel[0] = start[0] + (i + 0.5) * camUpVector[0] * pixelDY
+				+ (j - 0.5) * camRightVector[0] * pixelDX;
+			pixel[1] = start[1] + (i + 0.5) * camUpVector[1] * pixelDY
+				+ (j + 0.5) * camRightVector[1] * pixelDX;
+			pixel[2] = start[2] + (i + 0.5) * camUpVector[2] * pixelDY
+				+ (j + 0.5) * camRightVector[2] * pixelDX;
 
-		/*
-		* setup view ray
-		* In perspective projection, each view ray originates from the eye (camera) position
-		* and pierces through a pixel in the view plane
-		*
-		* TODO: For a little extra credit, set up the view rays to produce orthographic projection
-		*/
-		Ray viewray;
-		viewray.SetRay(camPosition, (pixel - camPosition).Normalise());
+			/*
+			* setup view ray
+			* In perspective projection, each view ray originates from the eye (camera) position
+			* and pierces through a pixel in the view plane
+			*
+			* TODO: For a little extra credit, set up the view rays to produce orthographic projection
+			*/
+			Ray viewray;
+			viewray.SetRay(camPosition, (pixel - camPosition).Normalise());
 
-		//trace the scene using the view ray
-		//the default colour is the background colour, unless something is hit along the way
-		Colour colour = this->TraceScene(pScene, viewray, scenebg, m_traceLevel);
+			//trace the scene using the view ray
+			//the default colour is the background colour, unless something is hit along the way
+			Colour colour = this->TraceScene(pScene, viewray, scenebg, m_traceLevel);
 
-		/*
-		* The only OpenGL code we need
-		* Draw the pixel as a coloured rectangle
-		*/
-		glColor3f(colour.red, colour.green, colour.blue);
-		glRecti(j, i, j + 1, i + 1);
+			/*
+			* The only OpenGL code we need
+			* Draw the pixel as a coloured rectangle
+			*/
+			glColor3f(colour.red, colour.green, colour.blue);
+			glRecti(j, i, j + 1, i + 1);
+		}
+		glFlush();
 	}
-	glFlush();
-}
 
-fprintf(stdout, "Done!!!\n");
-m_renderCount++;
+	fprintf(stdout, "Done!!!\n");
+	m_renderCount++;
+
 	}
 	glFlush();
 }
@@ -182,17 +183,6 @@ Colour RayTracer::TraceScene(Scene* pScene, Ray& ray, Colour incolour, int trace
 				//Recursively call TraceScene with the reflection ray
 				//Combine the returned colour with the current surface colour
 
-				//Vector3 refraction = (result.point).Refract(result.normal, 1.52);
-
-				//Ray refractionRay = Ray();
-				//refractionRay.SetRay(result.point, refraction);
-
-				//Colour c = TraceScene(pScene, refractionRay, incolour, tracelevel -= 1, false);
-
-				//outcolour.red *= c.red;
-				//outcolour.green *= c.green;
-				//outcolour.blue *= c.blue;
-
 			}
 		}
 		
@@ -206,14 +196,30 @@ Colour RayTracer::TraceScene(Scene* pScene, Ray& ray, Colour incolour, int trace
 				//Recursively call TraceScene with the shadow ray
 
 				Vector3 light_pos = (*lit_iter)->GetLightPosition();
-				Vector3 dirToLight = (light_pos - result.point);
-
+				Vector3 dirToLight = (light_pos - result.point).Normalise();	
+				
 				Ray shadowRay = Ray();
-				shadowRay.SetRay(result.point * 0.00001f, dirToLight);
 
-				TraceScene(pScene, shadowRay, incolour, tracelevel -= 1, true);
+				// Correct the intersection results positioning to prevent self shadowing, causing artifacts.
+				for (int i = 0; i < 3; ++i)
+				{
+					result.point[i] += 0.1f;
+				}
 
+				// Set the ray origin at the current intersection point, and set its direction towards the light source.
+				shadowRay.SetRay(result.point, dirToLight);
 
+				// Cast the shadow ray.
+				RayHitResult shadowResult = pScene->IntersectByRay(shadowRay, true);
+
+				// if the value of t is less than the t value of the primary ray, the shadow ray was blocked by something.
+				if (result.t > shadowResult.t)
+				{
+					// In shadow
+					outcolour.red *= 0.3;
+					outcolour.green *= 0.3;
+					outcolour.blue *= 0.3;
+				}
 
 				lit_iter++;
 			}

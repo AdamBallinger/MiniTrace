@@ -109,7 +109,7 @@ Vector3 Vector3::Reflect(const Vector3& n) const
 	//TODO: Calculate the reflection of this vector given the input normal n
 	//Store the result in result
 
-	result = n * 2 * DotProduct(n) - self;
+	result = n * 2 * self.DotProduct(n) - self;
 	
 	return result;
 }
@@ -123,8 +123,19 @@ Vector3 Vector3::Refract(const Vector3& n, double r_coeff) const
 	//Store the result in result
 	//Refraction is governed by the Snell's law
 
-	float c = -self.DotProduct(n);
-	result = self * r_coeff + (n * (r_coeff * c - sqrt(1.0f - r_coeff * r_coeff * (1.0f - c * c))));
+	float r = 1.0f / r_coeff;
+
+	float cosI = -1.0f * n.DotProduct(self);
+	float cosT2 = 1.0f - r * r * (1.0f - cosI - cosI);
+
+	if (cosT2 < 0)
+	{
+		result.SetZero();
+		return result;
+	}
+
+	result = (self * r) = (n * (r * cosI - sqrtf(cosT2)));
+	result.Normalise();
 
 	return result;
 }
