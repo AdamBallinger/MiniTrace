@@ -145,17 +145,23 @@ Colour RayTracer::TraceScene(Scene* pScene, Ray& ray, Colour incolour, int trace
 	if (result.data) //the ray has hit something
 	{
 		Vector3 start = ray.GetRayStart(); 
+
 		if (!shadowray)
 		{
-			outcolour = CalculateLighting(light_list,
-				&start,
-				&result);
+			// Only calculate the diffuse and specular lighting if the current ray isn't a shadow ray.
+			outcolour = CalculateLighting(light_list, &start, &result);
 		}
 		else
 		{
-			outcolour.red /= 2;
-			outcolour.green /= 2;
-			outcolour.blue /= 2;
+			// Controls the darkness of the shadow (higher is darker).
+			float shadowPower = 3.0f;
+
+			// If the current ray is a shadow ray, divide the current colour by shadowPower to darken the colour.
+			outcolour.red /= shadowPower;
+			outcolour.green /= shadowPower;
+			outcolour.blue /= shadowPower;
+
+			// Return the colour to prevent shadows having reflection and refraction.
 			return outcolour;
 		}
 
@@ -194,17 +200,16 @@ Colour RayTracer::TraceScene(Scene* pScene, Ray& ray, Colour incolour, int trace
 				//Recursively call TraceScene with the reflection ray
 				//Combine the returned colour with the current surface colour
 
-				Vector3 refraction = (ray.GetRay()).Refract(result.normal, 1.0 / 1.08);
+				Vector3 refraction = (ray.GetRay()).Refract(result.normal, 1.0 / 1.02);
 
-				Ray reflectedRay = Ray();
-				reflectedRay.SetRay(result.point + refraction * 0.001, refraction);
+				Ray refractedRay = Ray();
+				refractedRay.SetRay(result.point + refraction * 0.001, refraction);
 
-				Colour c = TraceScene(pScene, reflectedRay, outcolour, tracelevel -= 1, false);
+				Colour c = TraceScene(pScene, refractedRay, outcolour, tracelevel -= 1, false);
 
 				outcolour.red *= c.red;
 				outcolour.green *= c.green;
 				outcolour.blue *= c.blue; 
-
 			}
 		}
 		
@@ -222,25 +227,23 @@ Colour RayTracer::TraceScene(Scene* pScene, Ray& ray, Colour incolour, int trace
 				
 				Ray shadowRay = Ray();
 
-				//// Correct the intersection results positioning to prevent self shadowing, causing artifacts.
-				/*for (int i = 0; i < 3; ++i)
-				{
-					result.point[i] += 0.1f;
-				}*/
+				////////////////////////////////////////////////
+				/////// Shadows without using TraceScene ///////
+				////////////////////////////////////////////////
 
-				//// Set the ray origin at the current intersection point, and set its direction towards the light source.
-				//shadowRay.SetRay(result.point, dirToLight);
+				// Set the ray origin at the current intersection point, and set its direction towards the light source.
+				//shadowRay.SetRay(result.point + dirToLight * 0.001, dirToLight);
 
-				//// Cast the shadow ray.
+				//// Test the shadow ray.
 				//RayHitResult shadowResult = pScene->IntersectByRay(shadowRay, true);
 
-				//// if the value of t is less than the t value of the primary ray, the shadow ray was blocked by something.
+				//// If the value of shadowResult.t is less than the t value of the primary ray(result.t), the shadow ray was blocked by something.
 				//if (result.t > shadowResult.t)
 				//{
 				//	// In shadow
-				//	outcolour.red *= 0.3;
-				//	outcolour.green *= 0.3;
-				//	outcolour.blue *= 0.3;
+				//	outcolour.red /= 3;
+				//	outcolour.green /= 3;
+				//	outcolour.blue /= 3;
 				//}
 
 				shadowRay.SetRay(result.point + dirToLight * 0.001, dirToLight);
@@ -322,7 +325,7 @@ Colour RayTracer::CalculateLighting(std::vector<Light*>* lights, Vector3* campos
 			Vector3 reflection = (light_dir.Reflect(normal));
 			reflection.Normalise();
 
-			// Blinn-Phong model)
+			// (Blinn-Phong model)
 			Vector3 half = (light_dir + view);
 			half.Normalise();
 

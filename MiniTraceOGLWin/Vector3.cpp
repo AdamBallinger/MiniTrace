@@ -123,6 +123,8 @@ Vector3 Vector3::Refract(const Vector3& n, double r_coeff) const
 	//Store the result in result
 	//Refraction is governed by the Snell's law
 
+	// Reference: http://www.flipcode.com/archives/reflection_transmission.pdf
+
 	float cosI = (float)n.DotProduct(self);
 	float cosT2 = (float)r_coeff * (float)r_coeff * (1.0f - powf(cosI, 2.0));
 
@@ -133,6 +135,7 @@ Vector3 Vector3::Refract(const Vector3& n, double r_coeff) const
 
 		return result; 
 	}
+	// Invalid refraction
 	result.SetZero();
 	return result;
 }

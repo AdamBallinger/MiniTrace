@@ -130,7 +130,6 @@ void Scene::InitDefaultScene()
 
 	//default camera position and look at
 	m_activeCamera.SetPositionAndLookAt(Vector3(3.0, 7.0, 13.0), Vector3(0.0, 7.0, 0.0));
-	//m_activeCamera.SetPositionAndLookAt(newlight->GetLightPosition(), Vector3(0.0, 7.0, 0.0));
 }
 
 void Scene::CleanupScene()
