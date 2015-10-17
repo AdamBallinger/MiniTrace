@@ -182,11 +182,11 @@ Colour RayTracer::TraceScene(Scene* pScene, Ray& ray, Colour incolour, int trace
 				Ray reflectedRay = Ray();
 				reflectedRay.SetRay(result.point, reflection);
 
-				Colour c = TraceScene(pScene, reflectedRay, incolour, tracelevel -= 1, false);
+				Colour c = TraceScene(pScene, reflectedRay, outcolour, tracelevel -= 1, false);
 
-				outcolour.red *= c.red;
-				outcolour.green *= c.green;
-				outcolour.blue *= c.blue;
+				outcolour.red *= c.red + 0.2;
+				outcolour.green *= c.green + 0.2;
+				outcolour.blue *= c.blue + 0.2;
 			}
 		}
 
@@ -200,16 +200,16 @@ Colour RayTracer::TraceScene(Scene* pScene, Ray& ray, Colour incolour, int trace
 				//Recursively call TraceScene with the reflection ray
 				//Combine the returned colour with the current surface colour
 
-				Vector3 refraction = (ray.GetRay()).Refract(result.normal, 1.0 / 1.02);
+				Vector3 refraction = (ray.GetRay()).Refract(result.normal, 1.0 / 1.06);
 
 				Ray refractedRay = Ray();
 				refractedRay.SetRay(result.point + refraction * 0.001, refraction);
 
 				Colour c = TraceScene(pScene, refractedRay, outcolour, tracelevel -= 1, false);
 
-				outcolour.red *= c.red;
-				outcolour.green *= c.green;
-				outcolour.blue *= c.blue; 
+				outcolour.red *= c.red + outcolour.red;
+				outcolour.green *= c.green + outcolour.green;
+				outcolour.blue *= c.blue + outcolour.blue;
 			}
 		}
 		
@@ -330,10 +330,10 @@ Colour RayTracer::CalculateLighting(std::vector<Light*>* lights, Vector3* campos
 			half.Normalise();
 
 			// Calculate the specular term. (Phong model)
-			//float specular = view.DotProduct(reflection);
+			float specular = view.DotProduct(reflection);
 
 			// Calculate the specular term. (Blinn-Phong model)
-			float specular = (float)normal.DotProduct(half);
+			//float specular = (float)normal.DotProduct(half);
 
 			if (specular > 1) specular = 1;
 			if (specular < 0) specular = 0;
